@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
-import { Color, InputListener } from "digital-ink";
+import { Color, InkBuilder, InputListener } from "digital-ink";
 import InkingWebGL from "../.client/ink/InkingWebGL";
 import InvisibleInk from "../.client/eraser/InvisibleInk";
 import UIMMainThreadSample from "../.client/save/index.jsx";
 import Inking2D from "../.client/ink/Inking2D.js";
-import * as Y from "yjs";
-import { WebrtcProvider } from "y-webrtc";
+import * as Y from "yjs"
+import { WebrtcProvider } from "y-webrtc"
 
 export const meta = () => {
     return [
@@ -14,21 +14,59 @@ export const meta = () => {
     ];
 };
 
+
+
 export default function Index() {
     const canvasRef = useRef(null);
     const inkController = useRef(null);
+    const ydoc = new Y.Doc()
+    const ymap = ydoc.getMap("map")
+    ymap.observe(event => {
+        let newSensorPoint = {}
+        switch (ymap.get("sensor").phase.name) {
+            case "BEGIN":
+                console.log("BEGIN")
+                console.log(ymap.get('sensor'))
+                newSensorPoint = {
+                    ...ymap.get("sensor"),
+                    phase: InkBuilder.Phase.BEGIN
+                  }
+                inkController.current.registerInputProvider(1, true)
+                inkController.current.begin(newSensorPoint)
+                break
+            case "UPDATE":
+                console.log("UPDATE")
+                newSensorPoint = {
+                    ...ymap.get("sensor"),
+                    phase: InkBuilder.Phase.UPDATE
+                  }
+                inkController.current.move(newSensorPoint)
+                break
+            case "END":
+                console.log("END")
+            //     inkController.current.end(ymap.get("sensor"))
+                break
+            default:
+                break
+        }
+    })
 
     useEffect(() => {
+        window.ymap = ymap
+        const provider = new WebrtcProvider("remix-ink", ydoc)
+
         inkController.current = new UIMMainThreadSample(canvasRef.current);
         inkController.current.init();
-        window.builder = inkController.current.builder;
+        window.builder = inkController.current.builder
         InputListener.attach(inkController.current);
+        InputListener.disable()
         // for debug
-        window.inkController = inkController;
-        window.inputListener = InputListener;
+        window.inkController = inkController
+        window.inputListener = InputListener
         return () => {
             InputListener.detach(inkController.current);
-        };
+            provider.destroy()
+        }
     }, []);
 
     const clearCanvas = () => {
@@ -70,6 +108,22 @@ export default function Index() {
             URL.revokeObjectURL(url);
         });
     };
+
+    const pointerDown = (e) => {
+        const sensorPoint = window.inputListener.createSensorPoint(e.nativeEvent)
+        ymap.set("sensor", sensorPoint)
+    }
+
+    const pointerMove = (e) => {
+        if (e.buttons !== 1) return
+        const sensorPoint = window.inputListener.createSensorPoint(e.nativeEvent)
+        ymap.set("sensor", sensorPoint)
+    }
+
+    const pointerUp = (e) => {
+        const sensorPoint = window.inputListener.createSensorPoint(new PointerEvent(e.type))
+        ymap.set("sensor", sensorPoint)
+    }
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -171,6 +225,9 @@ export default function Index() {
                         ref={canvasRef}
                         width="800"
                         height="600"
+                        onPointerDown={pointerDown}
+                        onPointerMove={pointerMove}
+                        onPointerUp={pointerUp}
                     ></canvas>
                 </div>
             </div>
