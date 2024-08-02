@@ -44,7 +44,11 @@ export default function Index() {
                 break
             case "END":
                 console.log("END")
-            //     inkController.current.end(ymap.get("sensor"))
+                newSensorPoint = {
+                    ...ymap.get("sensor"),
+                    phase: InkBuilder.Phase.END
+                  }
+                inkController.current.end(newSensorPoint)
                 break
             default:
                 break
