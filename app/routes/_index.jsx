@@ -6,6 +6,7 @@ import UIMMainThreadSample from "../.client/save/index.jsx";
 import Inking2D from "../.client/ink/Inking2D.js";
 import * as Y from "yjs"
 import { WebrtcProvider } from "y-webrtc"
+import { WebsocketProvider } from "y-websocket";
 
 export const meta = () => {
     return [
@@ -63,7 +64,7 @@ export default function Index() {
         inkController.current.init();
         window.builder = inkController.current.builder
         InputListener.attach(inkController.current);
-        InputListener.disable()
+        // InputListener.disable()
         // for debug
         window.inkController = inkController
         window.inputListener = InputListener
@@ -114,18 +115,21 @@ export default function Index() {
     };
 
     const pointerDown = (e) => {
+        e.preventDefault()
         const sensorPoint = window.inputListener.createSensorPoint(e.nativeEvent)
         ymap.set("sensor", sensorPoint)
     }
 
     const pointerMove = (e) => {
         if (e.buttons !== 1) return
+        e.preventDefault()
         const sensorPoint = window.inputListener.createSensorPoint(e.nativeEvent)
         ymap.set("sensor", sensorPoint)
     }
 
     const pointerUp = (e) => {
-        const sensorPoint = window.inputListener.createSensorPoint(new PointerEvent(e.type))
+        e.preventDefault()
+        const sensorPoint = window.inputListener.createSensorPoint(e.nativeEvent)
         ymap.set("sensor", sensorPoint)
     }
 
